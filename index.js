@@ -3,7 +3,7 @@ const cors = require("cors");
 require("dotenv").config();
 const app = express();
 const PORT = process.env.PORT || 4000;
-// biltIn middlewares
+// middlewares
 app.use(cors());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
@@ -12,8 +12,6 @@ app.use(express.json());
 
 const { MongoClient, ServerApiVersion } = require("mongodb");
 const uri = process.env.dbURL;
-
-// Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
   serverApi: {
     version: ServerApiVersion.v1,
@@ -24,22 +22,42 @@ const client = new MongoClient(uri, {
 
 async function run() {
   try {
-    // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
-    // Send a ping to confirm a successful connection
+
+    const serviceCollection = client.db("tourSport").collection("service");
+
+    // create service
+
+    app.post("/api/v1/service", async (req, res) => {
+      try {
+        const service = req.body;
+        const result = await serviceCollection.insertOne(service);
+        res.status(201).send(result);
+      } catch (error) {
+        res.status(500).send("Server Internal error", error);
+      }
+    });
+
+    // get service
+
+    app.get("/api/v1/services", async (req, res) => {
+      try {
+        const result = await serviceCollection.find().toArray();
+        res.status(200).send(result);
+      } catch (error) {
+        res.status(500).send("Server Internal error", error);
+      }
+    });
+
     await client.db("admin").command({ ping: 1 });
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
     );
   } finally {
-    // Ensures that the client will close when you finish/error
-    await client.close();
+    // await client.close();
   }
 }
 run().catch(console.dir);
-
-// Server Root enpoint
-
 app.get("/", (req, res) => {
   try {
     res.status(200).send("<h1>CareerNest Server is Running ...</h1>");
