@@ -90,6 +90,19 @@ async function run() {
       }
     });
 
+    // delete service
+
+    app.delete("/api/v1/service/:id", async (req, res) => {
+      try {
+        const id = req.params.id;
+        const filter = { _id: new ObjectId(id) };
+        const result = await serviceCollection.deleteOne(filter);
+        res.status(200).send(result);
+      } catch (error) {
+        res.status(500).send("Server Internal error: " + error);
+      }
+    });
+
     await client.db("admin").command({ ping: 1 });
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
