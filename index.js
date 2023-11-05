@@ -10,7 +10,7 @@ app.use(express.json());
 
 // dabase connect here
 
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const uri = process.env.dbURL;
 const client = new MongoClient(uri, {
   serverApi: {
@@ -42,10 +42,51 @@ async function run() {
 
     app.get("/api/v1/services", async (req, res) => {
       try {
-        const result = await serviceCollection.find().toArray();
+        const search = req.query.search || "";
+        const searchRegExp = new RegExp(".*" + search + ".*", "i");
+        const filter = {
+          $or: [
+            {
+              serviceName: { $regex: searchRegExp },
+            },
+          ],
+        };
+        const result = await serviceCollection.find(filter).toArray();
         res.status(200).send(result);
       } catch (error) {
         res.status(500).send("Server Internal error", error);
+      }
+    });
+
+    // get single service
+
+    app.get("/api/v1/service/:id", async (req, res) => {
+      try {
+        const id = req.params.id;
+        const filter = { _id: new ObjectId(id) };
+        const result = await serviceCollection.findOne(filter);
+
+        if (result) {
+          res.status(200).send(result);
+        } else {
+          res.status(404).send("Service not found");
+        }
+      } catch (error) {
+        console.log(error.message);
+        res.status(500).send("Server Internal error: " + error);
+      }
+    });
+
+    // get service filtering by email
+
+    app.get("/api/v1/my-services", async (req, res) => {
+      try {
+        const email = req.query.email;
+        const filter = { serviceProviderEmail: email };
+        const result = await serviceCollection.find(filter).toArray();
+        res.status(200).send(result);
+      } catch (error) {
+        res.status(500).send("Server Internal error: " + error);
       }
     });
 
