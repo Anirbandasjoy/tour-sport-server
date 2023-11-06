@@ -103,6 +103,46 @@ async function run() {
       }
     });
 
+    // update service
+
+    app.put("/api/v1/service/:id", async (req, res) => {
+      try {
+        const {
+          serviceProviderName,
+          serviceProviderEmail,
+          serviceProviderLocation,
+
+          serviceName,
+          servicePrice,
+          serviceImage,
+          serviceArea,
+          serviceDsc,
+          serviceProviderImage,
+        } = req.body;
+
+        const id = req.params.id;
+        const filter = { _id: new ObjectId(id) };
+        const updateService = {
+          $set: {
+            serviceProviderName,
+            serviceProviderEmail,
+            serviceProviderLocation,
+            serviceName,
+            servicePrice,
+            serviceImage,
+            serviceArea,
+            serviceDsc,
+            serviceProviderImage,
+          },
+        };
+
+        const result = await serviceCollection.updateOne(filter, updateService);
+        res.status(200).send(result);
+      } catch (error) {
+        res.status(500).send("Server Internal error: " + error);
+      }
+    });
+
     await client.db("admin").command({ ping: 1 });
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
