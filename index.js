@@ -1,12 +1,20 @@
 const express = require("express");
 const cors = require("cors");
+const jwt = require("jsonwebtoken");
+const cookieParser = require("cookie-parser");
 require("dotenv").config();
 const app = express();
 const PORT = process.env.PORT || 4000;
 // middlewares
-app.use(cors());
+app.use(
+  cors({
+    origin: ["http://localhost:5173", "http://localhost:5174"],
+    credentials: true,
+  })
+);
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
+app.use(cookieParser());
 
 // dabase connect here
 
@@ -26,6 +34,47 @@ async function run() {
 
     const serviceCollection = client.db("tourSport").collection("service");
     const bookingCollection = client.db("tourSport").collection("booking");
+
+    // create middlewares
+
+    app.post("/jwt", (req, res) => {
+      const email = req.body.email;
+      console.log(email);
+      const token = jwt.sign({ email }, process.env.secret, {
+        expiresIn: "10h",
+      });
+      console.log(token);
+      res
+        .cookie("AccessToken", token, {
+          httpOnly: true,
+          secure: true,
+          sameSite: "none",
+          maxAge: 7 * 24 * 60 * 60 * 1000,
+        })
+        .send({ message: "Success" });
+    });
+
+    app.post("/logOut", (req, res) => {
+      try {
+        const user = req?.user;
+        res.clearCookie("AccessToken", { maxAge: 0 }).send({ success: true });
+      } catch (error) {
+        res.status(500).send("Server Internal error", error);
+      }
+    });
+    const verify = (req, res, next) => {
+      const token = req.cookies.AccessToken;
+      if (!token) {
+        return res.status(401).send({ message: "Forbidden Access", code: 401 });
+      }
+      jwt.verify(token, process.env.secret, (err, decode) => {
+        if (err) {
+          return res.status(403).send({ message: "Unauthorized", code: 403 }); // Change "UnAuthrize" to "Unauthorized"
+        }
+        req.user = decode;
+        next();
+      });
+    };
 
     // create service
 
@@ -80,9 +129,15 @@ async function run() {
 
     // get service filtering by email
 
-    app.get("/api/v1/my-services", async (req, res) => {
+    app.get("/api/v1/my-services", verify, async (req, res) => {
       try {
         const email = req.query.email;
+        console.log("user", req.user?.email);
+        console.log(email);
+        if (email !== req.user?.email) {
+          // Use req.user.email instead of req.query.email
+          return res.status(401).send({ message: "Unauthorized", code: 401 });
+        }
         const filter = { serviceProviderEmail: email };
         const result = await serviceCollection.find(filter).toArray();
         res.status(200).send(result);
