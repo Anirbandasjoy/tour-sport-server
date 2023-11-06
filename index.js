@@ -25,6 +25,7 @@ async function run() {
     await client.connect();
 
     const serviceCollection = client.db("tourSport").collection("service");
+    const bookingCollection = client.db("tourSport").collection("booking");
 
     // create service
 
@@ -111,7 +112,6 @@ async function run() {
           serviceProviderName,
           serviceProviderEmail,
           serviceProviderLocation,
-
           serviceName,
           servicePrice,
           serviceImage,
@@ -138,6 +138,18 @@ async function run() {
 
         const result = await serviceCollection.updateOne(filter, updateService);
         res.status(200).send(result);
+      } catch (error) {
+        res.status(500).send("Server Internal error: " + error);
+      }
+    });
+
+    // create booking
+
+    app.post("/api/v1/booking", async (req, res) => {
+      try {
+        const booking = req.body;
+        const result = await bookingCollection.insertOne(booking);
+        res.status(201).send(result);
       } catch (error) {
         res.status(500).send("Server Internal error: " + error);
       }
