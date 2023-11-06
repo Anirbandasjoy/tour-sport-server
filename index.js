@@ -155,9 +155,20 @@ async function run() {
       }
     });
 
-    // get booking filter by buyer email
+    // get All booking
 
     app.get("/api/v1/bookings", async (req, res) => {
+      try {
+        const result = await bookingCollection.find().toArray();
+        res.status(200).send(result);
+      } catch (error) {
+        res.status(500).send("Server Internal error: " + error);
+      }
+    });
+
+    // get booking filter by buyer email
+
+    app.get("/api/v1/buyer/bookings", async (req, res) => {
       try {
         const email = req.query.email;
         const filter = { buyerEmail: email };
@@ -169,13 +180,44 @@ async function run() {
       }
     });
 
-    // bookin delete
+    app.get("/api/v1/provider/bookings", async (req, res) => {
+      try {
+        const email = req.query.email;
+        const filter = { serviceProviderEmail: email };
+        const result = await bookingCollection.find(filter).toArray();
+        res.status(200).send(result);
+      } catch (error) {
+        console.log(error.message);
+        res.status(500).send("Server Internal error: " + error);
+      }
+    });
+
+    // booking delete
 
     app.delete("/api/v1/booking/:id", async (req, res) => {
       try {
         const id = req.params.id;
         const filter = { _id: new ObjectId(id) };
         const result = await bookingCollection.deleteOne(filter);
+        res.status(200).send(result);
+      } catch (error) {
+        res.status(500).send("Server Internal error: " + error);
+      }
+    });
+
+    // patch booking status update
+
+    app.patch("/api/v1/status/:id", async (req, res) => {
+      try {
+        const { status } = req.body;
+        const id = req.params.id;
+        const filter = { _id: new ObjectId(id) };
+        const updateStatus = {
+          $set: {
+            status,
+          },
+        };
+        const result = await bookingCollection.updateOne(filter, updateStatus);
         res.status(200).send(result);
       } catch (error) {
         res.status(500).send("Server Internal error: " + error);
