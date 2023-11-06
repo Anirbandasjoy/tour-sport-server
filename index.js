@@ -155,6 +155,20 @@ async function run() {
       }
     });
 
+    // get booking filter by buyer email
+
+    app.get("/api/v1/bookings", async (req, res) => {
+      try {
+        const email = req.query.email;
+        const filter = { buyerEmail: email };
+        const result = await bookingCollection.find(filter).toArray();
+        res.status(200).send(result);
+      } catch (error) {
+        console.log(error.message);
+        res.status(500).send("Server Internal error: " + error);
+      }
+    });
+
     await client.db("admin").command({ ping: 1 });
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
