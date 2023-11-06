@@ -132,8 +132,6 @@ async function run() {
     app.get("/api/v1/my-services", verify, async (req, res) => {
       try {
         const email = req.query.email;
-        console.log("user", req.user?.email);
-        console.log(email);
         if (email !== req.user?.email) {
           // Use req.user.email instead of req.query.email
           return res.status(401).send({ message: "Unauthorized", code: 401 });
@@ -235,9 +233,15 @@ async function run() {
       }
     });
 
-    app.get("/api/v1/provider/bookings", async (req, res) => {
+    app.get("/api/v1/provider/bookings", verify, async (req, res) => {
       try {
         const email = req.query.email;
+        console.log("qqqqqqqqq", email);
+        console.log("uuuuuuuuuuu", req.user?.email);
+        if (email !== req.user?.email) {
+          // Use req.user.email instead of req.query.email
+          return res.status(401).send({ message: "Unauthorized", code: 401 });
+        }
         const filter = { serviceProviderEmail: email };
         const result = await bookingCollection.find(filter).toArray();
         res.status(200).send(result);
