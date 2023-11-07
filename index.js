@@ -30,7 +30,7 @@ const client = new MongoClient(uri, {
 
 async function run() {
   try {
-    await client.connect();
+    // await client.connect();
 
     const serviceCollection = client.db("tourSport").collection("service");
     const bookingCollection = client.db("tourSport").collection("booking");
@@ -55,7 +55,13 @@ async function run() {
     app.post("/logOut", (req, res) => {
       try {
         const user = req?.user;
-        res.clearCookie("AccessToken", { maxAge: 0 }).send({ success: true });
+        res
+          .clearCookie("AccessToken", {
+            maxAge: 0,
+            secure: true,
+            sameSite: "none",
+          })
+          .send({ success: true });
       } catch (error) {
         res.status(500).send("Server Internal error", error);
       }
@@ -287,7 +293,7 @@ async function run() {
       }
     });
 
-    await client.db("admin").command({ ping: 1 });
+    // await client.db("admin").command({ ping: 1 });
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
     );
