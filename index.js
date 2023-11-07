@@ -39,11 +39,9 @@ async function run() {
 
     app.post("/jwt", (req, res) => {
       const email = req.body.email;
-      console.log(email);
       const token = jwt.sign({ email }, process.env.secret, {
         expiresIn: "10h",
       });
-      console.log(token);
       res
         .cookie("AccessToken", token, {
           httpOnly: true,
@@ -62,6 +60,7 @@ async function run() {
         res.status(500).send("Server Internal error", error);
       }
     });
+
     const verify = (req, res, next) => {
       const token = req.cookies.AccessToken;
       if (!token) {
@@ -69,7 +68,7 @@ async function run() {
       }
       jwt.verify(token, process.env.secret, (err, decode) => {
         if (err) {
-          return res.status(403).send({ message: "Unauthorized", code: 403 }); // Change "UnAuthrize" to "Unauthorized"
+          return res.status(403).send({ message: "Unauthorized", code: 403 });
         }
         req.user = decode;
         next();
@@ -131,16 +130,20 @@ async function run() {
 
     app.get("/api/v1/my-services", verify, async (req, res) => {
       try {
-        const email = req.query.email;
-        if (email !== req.user?.email) {
-          // Use req.user.email instead of req.query.email
+        const userEmail = req.user.email;
+        const requestedEmail = req.query.email;
+        const yourEmail = req.query.yourEmail;
+
+        if (userEmail !== requestedEmail && userEmail !== yourEmail) {
           return res.status(401).send({ message: "Unauthorized", code: 401 });
         }
-        const filter = { serviceProviderEmail: email };
+
+        const filter = { serviceProviderEmail: requestedEmail };
         const result = await serviceCollection.find(filter).toArray();
         res.status(200).send(result);
       } catch (error) {
-        res.status(500).send("Server Internal error: " + error);
+        console.error(error);
+        res.status(500).send("Server Internal error: " + error.message);
       }
     });
 
@@ -210,20 +213,24 @@ async function run() {
 
     // get All booking
 
-    app.get("/api/v1/bookings", async (req, res) => {
-      try {
-        const result = await bookingCollection.find().toArray();
-        res.status(200).send(result);
-      } catch (error) {
-        res.status(500).send("Server Internal error: " + error);
-      }
-    });
+    // app.get("/api/v1/bookings", async (req, res) => {
+    //   try {
+    //     const result = await bookingCollection.find().toArray();
+    //     res.status(200).send(result);
+    //   } catch (error) {
+    //     res.status(500).send("Server Internal error: " + error);
+    //   }
+    // });
 
     // get booking filter by buyer email
 
-    app.get("/api/v1/buyer/bookings", async (req, res) => {
+    app.get("/api/v1/buyer/bookings", verify, async (req, res) => {
       try {
         const email = req.query.email;
+        if (email !== req.user?.email) {
+          return res.status(401).send({ message: "Unauthrize" });
+        }
+
         const filter = { buyerEmail: email };
         const result = await bookingCollection.find(filter).toArray();
         res.status(200).send(result);
@@ -236,11 +243,8 @@ async function run() {
     app.get("/api/v1/provider/bookings", verify, async (req, res) => {
       try {
         const email = req.query.email;
-        console.log("qqqqqqqqq", email);
-        console.log("uuuuuuuuuuu", req.user?.email);
         if (email !== req.user?.email) {
-          // Use req.user.email instead of req.query.email
-          return res.status(401).send({ message: "Unauthorized", code: 401 });
+          return res.status(401).send({ message: "Unauthrize" });
         }
         const filter = { serviceProviderEmail: email };
         const result = await bookingCollection.find(filter).toArray();
